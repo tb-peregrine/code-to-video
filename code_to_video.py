@@ -20,16 +20,18 @@ import click
 class TypingRealism:
     """Handles realistic typing speed variations based on keyboard ergonomics and human factors"""
     
-    def __init__(self, base_speed: float = 20.0, realism_factor: float = 1.0):
+    def __init__(self, base_speed: float = 10.0, realistic: bool = True, randomness: float = 1.0):
         """
         Initialize typing realism system
         
         Args:
             base_speed: Base characters per second
-            realism_factor: How much realism to apply (0.0 = none, 1.0 = full, 2.0 = exaggerated)
+            realistic: Whether to apply keyboard ergonomics and pattern recognition
+            randomness: How much random variation to apply (0.0 = none, 1.0 = normal, 2.0 = high)
         """
         self.base_speed = base_speed
-        self.realism_factor = realism_factor
+        self.realistic = realistic
+        self.randomness = randomness
         
         # QWERTY keyboard layout with difficulty scores
         # Scores: 1.0 = home row (fastest), higher = slower
@@ -84,7 +86,7 @@ class TypingRealism:
     
     def get_character_delay(self, char: str, context: str = "", position: int = 0) -> float:
         """
-        Calculate realistic delay for typing a character
+        Calculate delay for typing a character with optional realism and randomness
         
         Args:
             char: Character being typed
@@ -94,36 +96,36 @@ class TypingRealism:
         Returns:
             Delay in seconds before typing this character
         """
-        if self.realism_factor == 0.0:
-            return 1.0 / self.base_speed
-        
-        # Base delay from typing speed
+        # Start with base delay from typing speed
         base_delay = 1.0 / self.base_speed
+        adjusted_delay = base_delay
         
-        # Get character difficulty
-        char_lower = char.lower()
-        difficulty = self.key_difficulty.get(char_lower, 1.5)  # Default for unknown chars
+        # Apply realism (keyboard ergonomics and patterns) if enabled
+        if self.realistic:
+            # Get character difficulty
+            char_lower = char.lower()
+            difficulty = self.key_difficulty.get(char_lower, 1.5)  # Default for unknown chars
+            
+            # Check for fast patterns
+            pattern_multiplier = 1.0
+            for pattern, multiplier in self.fast_patterns.items():
+                if pattern in context[max(0, position-10):position+10]:
+                    pattern_multiplier = min(pattern_multiplier, multiplier)
+                    break
+            
+            # Check for slow patterns  
+            for pattern, multiplier in self.slow_patterns.items():
+                if pattern in context[max(0, position-10):position+10]:
+                    pattern_multiplier = max(pattern_multiplier, multiplier)
+                    break
+            
+            # Apply difficulty and pattern adjustments
+            adjusted_delay = base_delay * difficulty * pattern_multiplier
         
-        # Check for fast patterns
-        pattern_multiplier = 1.0
-        for pattern, multiplier in self.fast_patterns.items():
-            if pattern in context[max(0, position-10):position+10]:
-                pattern_multiplier = min(pattern_multiplier, multiplier)
-                break
-        
-        # Check for slow patterns  
-        for pattern, multiplier in self.slow_patterns.items():
-            if pattern in context[max(0, position-10):position+10]:
-                pattern_multiplier = max(pattern_multiplier, multiplier)
-                break
-        
-        # Apply difficulty and pattern adjustments
-        adjusted_delay = base_delay * difficulty * pattern_multiplier
-        
-        # Add natural human variation (normally distributed around the adjusted time)
-        if self.realism_factor > 0:
-            # Standard deviation is proportional to realism factor and base delay
-            std_dev = base_delay * 0.3 * self.realism_factor
+        # Add randomness if enabled
+        if self.randomness > 0:
+            # Standard deviation is proportional to randomness factor and current delay
+            std_dev = adjusted_delay * 0.3 * self.randomness
             variation = random.gauss(0, std_dev)
             adjusted_delay += variation
         
@@ -135,22 +137,25 @@ class TypingRealism:
     def get_pause_delay(self, pause_type: str = "thinking") -> float:
         """Get delay for natural pauses (end of lines, after punctuation, etc.)"""
         base_delay = 1.0 / self.base_speed
+        pause_delay = base_delay
         
-        pause_multipliers = {
-            "comma": 2.0,        # Brief pause after comma
-            "period": 3.0,       # Longer pause after sentence
-            "semicolon": 2.5,    # Programming statement end
-            "newline": 1.5,      # New line pause
-            "thinking": 4.0,     # General thinking pause
-            "brace": 1.8,        # After opening/closing braces
-        }
+        # Apply realistic pause lengths if realism is enabled
+        if self.realistic:
+            pause_multipliers = {
+                "comma": 2.0,        # Brief pause after comma
+                "period": 3.0,       # Longer pause after sentence
+                "semicolon": 2.5,    # Programming statement end
+                "newline": 1.5,      # New line pause
+                "thinking": 4.0,     # General thinking pause
+                "brace": 1.8,        # After opening/closing braces
+            }
+            
+            multiplier = pause_multipliers.get(pause_type, 1.0)
+            pause_delay = base_delay * multiplier
         
-        multiplier = pause_multipliers.get(pause_type, 1.0)
-        pause_delay = base_delay * multiplier * self.realism_factor
-        
-        if self.realism_factor > 0:
-            # Add some variation to pauses too
-            std_dev = pause_delay * 0.4
+        # Add randomness to pauses if enabled
+        if self.randomness > 0:
+            std_dev = pause_delay * 0.4 * self.randomness
             variation = max(0, random.gauss(0, std_dev))  # No negative pauses
             pause_delay += variation
         
@@ -283,12 +288,12 @@ class VideoConfig:
                  width: int = 1024,
                  height: int = 768,
                  fps: int = 30,
-                 typing_speed: int = 30,  # characters per second
+                 typing_speed: int = 10,  # characters per second
                  font_size: int = 16,
                  theme: str = 'dark',
                  pause_duration: float = 2.0,
-                 realistic_typing: bool = True,
-                 realism_factor: float = 1.0):
+                 realistic: bool = True,
+                 randomness: float = 1.0):
         self.width = width
         self.height = height
         self.fps = fps
@@ -296,8 +301,8 @@ class VideoConfig:
         self.font_size = font_size
         self.theme_name = theme
         self.pause_duration = pause_duration
-        self.realistic_typing = realistic_typing
-        self.realism_factor = realism_factor
+        self.realistic = realistic
+        self.randomness = randomness
         
         # Load theme configuration
         theme_manager = ThemeManager()
@@ -364,8 +369,7 @@ class CodeToVideoGenerator:
         self.highlighter = SyntaxHighlighter(config.theme)
         
         # Initialize typing realism system
-        realism_factor = config.realism_factor if config.realistic_typing else 0.0
-        self.typing_realism = TypingRealism(config.typing_speed, realism_factor)
+        self.typing_realism = TypingRealism(config.typing_speed, config.realistic, config.randomness)
 
         # Try to load a monospace font
         self.font = self._load_font()
@@ -511,7 +515,7 @@ class CodeToVideoGenerator:
                 highlighted_tokens = self.highlighter.get_highlighted_text(
                     block.code, block.language)
 
-                if self.config.realistic_typing:
+                if self.config.realistic or self.config.randomness > 0:
                     self._generate_realistic_typing_frames(out, block, highlighted_tokens)
                 else:
                     self._generate_uniform_typing_frames(out, block, highlighted_tokens)
@@ -594,20 +598,20 @@ def get_available_themes():
 @click.command()
 @click.argument('input_file', type=click.Path(exists=True), required=False)
 @click.argument('output_file', type=click.Path(), required=False)
-@click.option('--typing-speed', default=30, help='Characters typed per second')
+@click.option('--typing-speed', default=10, help='Characters typed per second')
 @click.option('--font-size', default=16, help='Font size in pixels')
 @click.option('--width', default=1024, help='Video width')
 @click.option('--height', default=768, help='Video height')
 @click.option('--theme', default='dark', type=click.Choice(get_available_themes(), case_sensitive=False),
               help='Color theme')
 @click.option('--pause-duration', default=2.0, help='Pause between code blocks in seconds')
-@click.option('--realistic-typing/--no-realistic-typing', default=True, 
-              help='Enable realistic typing variations (default: enabled)')
-@click.option('--realism-factor', default=1.0, type=float,
-              help='How much realism to apply (0.0=none, 1.0=normal, 2.0=exaggerated)')
+@click.option('--non-realistic', is_flag=True, 
+              help='Disable realistic typing (keyboard difficulty and patterns)')
+@click.option('--randomness', default=1.0, type=float,
+              help='Amount of random variation in timing (0.0=none, 1.0=normal, 2.0=high)')
 @click.option('--list-themes', is_flag=True, help='List available themes and exit')
 def main(input_file, output_file, typing_speed, font_size, width, height, theme, pause_duration, 
-         realistic_typing, realism_factor, list_themes):
+         non_realistic, randomness, list_themes):
     """Convert markdown code blocks to a typing animation video."""
 
     # Handle list themes option
@@ -630,17 +634,23 @@ def main(input_file, output_file, typing_speed, font_size, width, height, theme,
     print(f"🎥 Output: {output_file}")
     print(f"🎨 Theme: {theme}")
     
-    if realistic_typing:
-        realism_desc = "disabled" if realism_factor == 0.0 else f"{realism_factor:.1f}x"
-        print(f"⌨️  Realistic typing: enabled ({realism_desc})")
+    # Show typing behavior status
+    realistic = not non_realistic
+    if realistic and randomness > 0:
+        print(f"⌨️  Typing: realistic + random ({randomness:.1f}x variation)")
+    elif realistic and randomness == 0:
+        print(f"⌨️  Typing: realistic (no randomness)")
+    elif not realistic and randomness > 0:
+        print(f"⌨️  Typing: uniform + random ({randomness:.1f}x variation)")
     else:
-        print(f"⌨️  Realistic typing: disabled")
+        print(f"⌨️  Typing: uniform (classic mode)")
 
     # Read input file
     with open(input_file, 'r', encoding='utf-8') as f:
         markdown_content = f.read()
 
         # Create configuration
+    realistic = not non_realistic
     config = VideoConfig(
         width=width,
         height=height,
@@ -648,8 +658,8 @@ def main(input_file, output_file, typing_speed, font_size, width, height, theme,
         font_size=font_size,
         theme=theme,
         pause_duration=pause_duration,
-        realistic_typing=realistic_typing,
-        realism_factor=realism_factor
+        realistic=realistic,
+        randomness=randomness
     )
 
     # Create generator

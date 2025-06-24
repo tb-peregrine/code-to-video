@@ -143,7 +143,7 @@ def test_realistic_typing():
     from code_to_video import TypingRealism
 
     # Test basic initialization
-    typing_realism = TypingRealism(base_speed=30.0, realism_factor=1.0)
+    typing_realism = TypingRealism(base_speed=30.0, realistic=True, randomness=1.0)
     
     # Test character delay calculation
     test_chars = ['a', 'Q', '!', ' ', '\n', '(', ')']
@@ -161,20 +161,28 @@ def test_realistic_typing():
     
     # Numbers and special chars should generally be slower than home row
     # (though random variation might occasionally make them faster)
-    print(f"   Home row 'a': {home_row_delay:.3f}s")
-    print(f"   Number '1': {number_delay:.3f}s") 
-    print(f"   Special '!': {special_delay:.3f}s")
+    print(f"   Realistic+Random 'a': {home_row_delay:.3f}s")
+    print(f"   Realistic+Random '1': {number_delay:.3f}s") 
+    print(f"   Realistic+Random '!': {special_delay:.3f}s")
     
     # Test pause delays
     pause_delay = typing_realism.get_pause_delay("comma")
     assert pause_delay > 0, "Pause delay should be positive"
     print(f"   Comma pause: {pause_delay:.3f}s")
     
-    # Test that realism factor affects timing
-    no_realism = TypingRealism(base_speed=30.0, realism_factor=0.0)
-    uniform_delay = no_realism.get_character_delay('a', "", 0)
-    base_expected = 1.0 / 30.0  # Should be exactly this with no realism
-    assert abs(uniform_delay - base_expected) < 0.001, "No realism should give uniform timing"
+    # Test non-realistic mode with no randomness (classic uniform)
+    uniform = TypingRealism(base_speed=30.0, realistic=False, randomness=0.0)
+    uniform_delay = uniform.get_character_delay('a', "", 0)
+    base_expected = 1.0 / 30.0  # Should be exactly this
+    assert abs(uniform_delay - base_expected) < 0.001, "Uniform mode should give exact timing"
+    print(f"   Uniform mode 'a': {uniform_delay:.3f}s")
+    
+    # Test realistic mode with no randomness
+    realistic_no_random = TypingRealism(base_speed=30.0, realistic=True, randomness=0.0)
+    realistic_delay_1 = realistic_no_random.get_character_delay('a', "", 0)
+    realistic_delay_2 = realistic_no_random.get_character_delay('a', "", 0)
+    assert abs(realistic_delay_1 - realistic_delay_2) < 0.001, "No randomness should give consistent delays"
+    print(f"   Realistic no-random 'a': {realistic_delay_1:.3f}s")
     
     print("✅ Realistic typing test passed!")
 

@@ -52,8 +52,8 @@ python code_to_video.py input.md output.mp4 \
 - `--height`: Video height (default: 768)
 - `--theme`: Color theme - see available themes with `--list-themes` (default: 'dark')
 - `--pause-duration`: Pause between code blocks in seconds (default: 2.0)
-- `--realistic-typing/--no-realistic-typing`: Enable/disable realistic typing variations (default: enabled)
-- `--realism-factor`: How much realism to apply (0.0=none, 1.0=normal, 2.0=exaggerated, default: 1.0)
+- `--non-realistic`: Disable realistic typing (keyboard difficulty and patterns)
+- `--randomness`: Amount of random variation in timing (0.0=none, 1.0=normal, 2.0=high, default: 1.0)
 - `--list-themes`: Show all available themes and exit
 
 ## Themes
@@ -72,40 +72,57 @@ You can create custom themes by adding JSON files to the `themes/` directory. Se
 
 ## Realistic Typing
 
-By default, the utility uses **realistic typing variations** that make the animation feel more human-like:
+By default, the utility uses **realistic typing** with **randomness** to create natural, human-like animations. These are now separate controls:
 
-### Key Features
+### Realism (Keyboard Ergonomics & Patterns)
 
 - **Keyboard Ergonomics**: Home row keys (ASDF, JKL;) are typed faster than numbers or special characters
 - **Character Difficulty**: Keys farther from home position take longer to type
 - **Special Characters**: Symbols requiring shift are slower than regular letters
 - **Programming Patterns**: Common code patterns like `()`, `{}`, `def` are typed faster due to muscle memory
-- **Natural Variation**: Random timing variation simulates human inconsistency
 - **Smart Pauses**: Longer pauses after punctuation, newlines, and complex characters
+
+### Randomness (Natural Variation)
+
+- **Timing Variation**: Random fluctuations in keystroke timing
+- **Human Inconsistency**: Simulates natural human typing inconsistency
+- **Configurable**: Control how much variation you want
 
 ### Examples
 
 ```bash
-# Realistic typing with normal variation (default)
+# Default: Realistic + normal randomness
 python code_to_video.py example.md output.mp4
 
-# Exaggerated realistic typing
-python code_to_video.py example.md output.mp4 --realism-factor 2.0
+# Realistic typing, no randomness (consistent delays for same characters)
+python code_to_video.py example.md output.mp4 --randomness 0
 
-# Uniform typing (like old behavior)
-python code_to_video.py example.md output.mp4 --no-realistic-typing
+# Realistic typing with high randomness
+python code_to_video.py example.md output.mp4 --randomness 2
 
-# Subtle realistic typing
-python code_to_video.py example.md output.mp4 --realism-factor 0.5
+# Classic uniform typing (no realism, no randomness)
+python code_to_video.py example.md output.mp4 --non-realistic --randomness 0
+
+# Uniform base speed with randomness applied
+python code_to_video.py example.md output.mp4 --non-realistic --randomness 2
 ```
 
-### Realism Factors
+### Randomness Levels
 
-- `0.0`: No variation (uniform timing)
+- `0.0`: No variation (perfectly consistent)
 - `0.5`: Subtle variation
 - `1.0`: Normal human-like variation (default)
 - `1.5`: Noticeable variation
-- `2.0`: Exaggerated variation (good for demonstration)
+- `2.0`: High variation (very human-like)
+
+### Typing Modes
+
+| Mode | Description | Command |
+|------|-------------|---------|
+| **Realistic + Random** | Default - keyboard difficulty + natural variation | *(default)* |
+| **Realistic Only** | Keyboard difficulty, no randomness | `--randomness 0` |
+| **Random Only** | Uniform base + random variation | `--non-realistic` |
+| **Classic Uniform** | Like old behavior - perfectly uniform | `--non-realistic --randomness 0` |
 
 ## Example Input
 
