@@ -1,0 +1,56 @@
+{
+    "name": "Dracula",
+    "description": "Dark theme with purple accents and vibrant colors",
+    "background": [
+        40,
+        42,
+        54
+    ],
+    "cursor": [
+        248,
+        248,
+        242
+    ],
+    "colors": {
+        "keyword": [
+            255,
+            121,
+            198
+        ],
+        "string": [
+            241,
+            250,
+            140
+        ],
+        "comment": [
+            98,
+            114,
+            164
+        ],
+        "number": [
+            189,
+            147,
+            249
+        ],
+        "function": [
+            80,
+            250,
+            123
+        ],
+        "class": [
+            139,
+            233,
+            253
+        ],
+        "operator": [
+            255,
+            184,
+            108
+        ],
+        "default": [
+            248,
+            248,
+            242
+        ]
+    }
+}

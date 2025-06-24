@@ -1,0 +1,56 @@
+{
+    "name": "Nord",
+    "description": "Arctic, north-bluish color palette",
+    "background": [
+        46,
+        52,
+        64
+    ],
+    "cursor": [
+        216,
+        222,
+        233
+    ],
+    "colors": {
+        "keyword": [
+            129,
+            161,
+            193
+        ],
+        "string": [
+            163,
+            190,
+            140
+        ],
+        "comment": [
+            76,
+            86,
+            106
+        ],
+        "number": [
+            180,
+            142,
+            173
+        ],
+        "function": [
+            136,
+            192,
+            208
+        ],
+        "class": [
+            235,
+            203,
+            139
+        ],
+        "operator": [
+            191,
+            97,
+            106
+        ],
+        "default": [
+            216,
+            222,
+            233
+        ]
+    }
+}

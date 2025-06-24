@@ -1,0 +1,56 @@
+{
+    "name": "Light",
+    "description": "Clean light theme for bright environments",
+    "background": [
+        255,
+        255,
+        255
+    ],
+    "cursor": [
+        0,
+        0,
+        0
+    ],
+    "colors": {
+        "keyword": [
+            128,
+            0,
+            128
+        ],
+        "string": [
+            0,
+            128,
+            0
+        ],
+        "comment": [
+            128,
+            128,
+            128
+        ],
+        "number": [
+            255,
+            140,
+            0
+        ],
+        "function": [
+            0,
+            0,
+            255
+        ],
+        "class": [
+            184,
+            134,
+            11
+        ],
+        "operator": [
+            0,
+            139,
+            139
+        ],
+        "default": [
+            0,
+            0,
+            0
+        ]
+    }
+}

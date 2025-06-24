@@ -1,0 +1,56 @@
+{
+    "name": "Monokai",
+    "description": "Popular dark theme inspired by Sublime Text's Monokai",
+    "background": [
+        39,
+        40,
+        34
+    ],
+    "cursor": [
+        248,
+        248,
+        242
+    ],
+    "colors": {
+        "keyword": [
+            249,
+            38,
+            114
+        ],
+        "string": [
+            230,
+            219,
+            116
+        ],
+        "comment": [
+            117,
+            113,
+            94
+        ],
+        "number": [
+            174,
+            129,
+            255
+        ],
+        "function": [
+            166,
+            226,
+            46
+        ],
+        "class": [
+            102,
+            217,
+            239
+        ],
+        "operator": [
+            249,
+            38,
+            114
+        ],
+        "default": [
+            248,
+            248,
+            242
+        ]
+    }
+}

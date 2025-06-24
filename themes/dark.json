@@ -1,0 +1,56 @@
+{
+    "name": "Dark",
+    "description": "Default dark theme with modern colors",
+    "background": [
+        40,
+        44,
+        52
+    ],
+    "cursor": [
+        255,
+        255,
+        255
+    ],
+    "colors": {
+        "keyword": [
+            198,
+            120,
+            221
+        ],
+        "string": [
+            152,
+            195,
+            121
+        ],
+        "comment": [
+            92,
+            99,
+            112
+        ],
+        "number": [
+            209,
+            154,
+            102
+        ],
+        "function": [
+            97,
+            175,
+            239
+        ],
+        "class": [
+            229,
+            192,
+            123
+        ],
+        "operator": [
+            86,
+            182,
+            194
+        ],
+        "default": [
+            171,
+            178,
+            191
+        ]
+    }
+}
