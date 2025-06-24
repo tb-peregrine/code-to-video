@@ -46,12 +46,14 @@ python code_to_video.py input.md output.mp4 \
 
 ## Options
 
-- `--typing-speed`: Characters per second (default: 30)
+- `--typing-speed`: Base characters per second (default: 30)
 - `--font-size`: Font size in pixels (default: 16)
 - `--width`: Video width (default: 1024)
 - `--height`: Video height (default: 768)
 - `--theme`: Color theme - see available themes with `--list-themes` (default: 'dark')
 - `--pause-duration`: Pause between code blocks in seconds (default: 2.0)
+- `--realistic-typing/--no-realistic-typing`: Enable/disable realistic typing variations (default: enabled)
+- `--realism-factor`: How much realism to apply (0.0=none, 1.0=normal, 2.0=exaggerated, default: 1.0)
 - `--list-themes`: Show all available themes and exit
 
 ## Themes
@@ -67,6 +69,43 @@ The utility supports multiple color themes for syntax highlighting. Available th
 - **nord**: Arctic, north-bluish color palette
 
 You can create custom themes by adding JSON files to the `themes/` directory. See `themes/README.md` for details.
+
+## Realistic Typing
+
+By default, the utility uses **realistic typing variations** that make the animation feel more human-like:
+
+### Key Features
+
+- **Keyboard Ergonomics**: Home row keys (ASDF, JKL;) are typed faster than numbers or special characters
+- **Character Difficulty**: Keys farther from home position take longer to type
+- **Special Characters**: Symbols requiring shift are slower than regular letters
+- **Programming Patterns**: Common code patterns like `()`, `{}`, `def` are typed faster due to muscle memory
+- **Natural Variation**: Random timing variation simulates human inconsistency
+- **Smart Pauses**: Longer pauses after punctuation, newlines, and complex characters
+
+### Examples
+
+```bash
+# Realistic typing with normal variation (default)
+python code_to_video.py example.md output.mp4
+
+# Exaggerated realistic typing
+python code_to_video.py example.md output.mp4 --realism-factor 2.0
+
+# Uniform typing (like old behavior)
+python code_to_video.py example.md output.mp4 --no-realistic-typing
+
+# Subtle realistic typing
+python code_to_video.py example.md output.mp4 --realism-factor 0.5
+```
+
+### Realism Factors
+
+- `0.0`: No variation (uniform timing)
+- `0.5`: Subtle variation
+- `1.0`: Normal human-like variation (default)
+- `1.5`: Noticeable variation
+- `2.0`: Exaggerated variation (good for demonstration)
 
 ## Example Input
 

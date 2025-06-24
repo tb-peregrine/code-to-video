@@ -5,6 +5,7 @@ Code to Video - Convert markdown code blocks to typing animation videos
 
 import json
 import os
+import random
 import re
 import time
 from typing import List, Tuple, Dict, Any
@@ -14,6 +15,146 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pygments.lexers import get_lexer_by_name
 import click
+
+
+class TypingRealism:
+    """Handles realistic typing speed variations based on keyboard ergonomics and human factors"""
+    
+    def __init__(self, base_speed: float = 20.0, realism_factor: float = 1.0):
+        """
+        Initialize typing realism system
+        
+        Args:
+            base_speed: Base characters per second
+            realism_factor: How much realism to apply (0.0 = none, 1.0 = full, 2.0 = exaggerated)
+        """
+        self.base_speed = base_speed
+        self.realism_factor = realism_factor
+        
+        # QWERTY keyboard layout with difficulty scores
+        # Scores: 1.0 = home row (fastest), higher = slower
+        self.key_difficulty = {
+            # Home row - fastest typing
+            'a': 1.0, 's': 1.0, 'd': 1.0, 'f': 1.0,
+            'j': 1.0, 'k': 1.0, 'l': 1.0, ';': 1.0,
+            
+            # Adjacent to home row - still fast
+            'q': 1.3, 'w': 1.2, 'e': 1.1, 'r': 1.1, 't': 1.2,
+            'y': 1.2, 'u': 1.1, 'i': 1.1, 'o': 1.2, 'p': 1.3,
+            'z': 1.4, 'x': 1.3, 'c': 1.2, 'v': 1.2, 'b': 1.3,
+            'n': 1.3, 'm': 1.2, ',': 1.2, '.': 1.3, '/': 1.4,
+            'g': 1.1, 'h': 1.1,  # Extended home row
+            
+            # Numbers - require reaching up
+            '1': 1.8, '2': 1.6, '3': 1.5, '4': 1.4, '5': 1.4,
+            '6': 1.4, '7': 1.4, '8': 1.5, '9': 1.6, '0': 1.8,
+            
+            # Special characters (often requiring shift)
+            '!': 2.2, '@': 2.0, '#': 1.9, '$': 1.8, '%': 1.8,
+            '^': 1.8, '&': 1.8, '*': 1.9, '(': 2.0, ')': 2.2,
+            '-': 1.5, '_': 2.0, '=': 1.6, '+': 2.1,
+            '[': 1.7, ']': 1.8, '{': 2.2, '}': 2.3,
+            '\\': 1.9, '|': 2.4, "'": 1.4, '"': 1.8,
+            '`': 1.7, '~': 2.1, '<': 1.6, '>': 1.7,
+            '?': 1.8, ':': 1.6,
+            
+            # Whitespace and common characters
+            ' ': 0.9,  # Space bar is easy and fast
+            '\t': 1.1,  # Tab is accessible
+            '\n': 1.2,  # Enter requires reach
+        }
+        
+        # Common programming patterns that might be typed faster due to muscle memory
+        self.fast_patterns = {
+            '()': 0.8, '[]': 0.8, '{}': 0.8, '""': 0.8, "''": 0.8,
+            '->': 0.7, '=>': 0.7, '==': 0.7, '!=': 0.8, '<=': 0.8, '>=': 0.8,
+            '&&': 0.8, '||': 0.8, '++': 0.8, '--': 0.8,
+            'def ': 0.6, 'function': 0.7, 'const ': 0.7, 'let ': 0.6,
+            'import ': 0.7, 'from ': 0.7, 'return ': 0.7,
+            'if ': 0.6, 'else': 0.7, 'for ': 0.6, 'while ': 0.7,
+            'true': 0.7, 'false': 0.7, 'null': 0.7, 'undefined': 0.8,
+        }
+        
+        # Slow patterns - things that require thinking or careful typing
+        self.slow_patterns = {
+            '/*': 1.3, '*/': 1.3, '<!--': 1.5, '-->': 1.5,
+            'TODO': 1.4, 'FIXME': 1.4, 'NOTE': 1.3,
+            'console.log': 1.2, 'print(': 1.1, 'printf': 1.2,
+        }
+    
+    def get_character_delay(self, char: str, context: str = "", position: int = 0) -> float:
+        """
+        Calculate realistic delay for typing a character
+        
+        Args:
+            char: Character being typed
+            context: Surrounding text context for pattern matching
+            position: Position in the overall text
+            
+        Returns:
+            Delay in seconds before typing this character
+        """
+        if self.realism_factor == 0.0:
+            return 1.0 / self.base_speed
+        
+        # Base delay from typing speed
+        base_delay = 1.0 / self.base_speed
+        
+        # Get character difficulty
+        char_lower = char.lower()
+        difficulty = self.key_difficulty.get(char_lower, 1.5)  # Default for unknown chars
+        
+        # Check for fast patterns
+        pattern_multiplier = 1.0
+        for pattern, multiplier in self.fast_patterns.items():
+            if pattern in context[max(0, position-10):position+10]:
+                pattern_multiplier = min(pattern_multiplier, multiplier)
+                break
+        
+        # Check for slow patterns  
+        for pattern, multiplier in self.slow_patterns.items():
+            if pattern in context[max(0, position-10):position+10]:
+                pattern_multiplier = max(pattern_multiplier, multiplier)
+                break
+        
+        # Apply difficulty and pattern adjustments
+        adjusted_delay = base_delay * difficulty * pattern_multiplier
+        
+        # Add natural human variation (normally distributed around the adjusted time)
+        if self.realism_factor > 0:
+            # Standard deviation is proportional to realism factor and base delay
+            std_dev = base_delay * 0.3 * self.realism_factor
+            variation = random.gauss(0, std_dev)
+            adjusted_delay += variation
+        
+        # Ensure minimum delay (humans can't type infinitely fast)
+        adjusted_delay = max(adjusted_delay, base_delay * 0.2)
+        
+        return adjusted_delay
+    
+    def get_pause_delay(self, pause_type: str = "thinking") -> float:
+        """Get delay for natural pauses (end of lines, after punctuation, etc.)"""
+        base_delay = 1.0 / self.base_speed
+        
+        pause_multipliers = {
+            "comma": 2.0,        # Brief pause after comma
+            "period": 3.0,       # Longer pause after sentence
+            "semicolon": 2.5,    # Programming statement end
+            "newline": 1.5,      # New line pause
+            "thinking": 4.0,     # General thinking pause
+            "brace": 1.8,        # After opening/closing braces
+        }
+        
+        multiplier = pause_multipliers.get(pause_type, 1.0)
+        pause_delay = base_delay * multiplier * self.realism_factor
+        
+        if self.realism_factor > 0:
+            # Add some variation to pauses too
+            std_dev = pause_delay * 0.4
+            variation = max(0, random.gauss(0, std_dev))  # No negative pauses
+            pause_delay += variation
+        
+        return pause_delay
 
 
 class Theme:
@@ -145,7 +286,9 @@ class VideoConfig:
                  typing_speed: int = 30,  # characters per second
                  font_size: int = 16,
                  theme: str = 'dark',
-                 pause_duration: float = 2.0):
+                 pause_duration: float = 2.0,
+                 realistic_typing: bool = True,
+                 realism_factor: float = 1.0):
         self.width = width
         self.height = height
         self.fps = fps
@@ -153,6 +296,8 @@ class VideoConfig:
         self.font_size = font_size
         self.theme_name = theme
         self.pause_duration = pause_duration
+        self.realistic_typing = realistic_typing
+        self.realism_factor = realism_factor
         
         # Load theme configuration
         theme_manager = ThemeManager()
@@ -217,6 +362,10 @@ class CodeToVideoGenerator:
     def __init__(self, config: VideoConfig):
         self.config = config
         self.highlighter = SyntaxHighlighter(config.theme)
+        
+        # Initialize typing realism system
+        realism_factor = config.realism_factor if config.realistic_typing else 0.0
+        self.typing_realism = TypingRealism(config.typing_speed, realism_factor)
 
         # Try to load a monospace font
         self.font = self._load_font()
@@ -349,7 +498,7 @@ class CodeToVideoGenerator:
         return cv_img
 
     def generate_video(self, code_blocks: List[CodeBlock], output_path: str):
-        """Generate the complete video"""
+        """Generate the complete video with realistic typing"""
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_path, fourcc, self.config.fps,
                               (self.config.width, self.config.height))
@@ -362,19 +511,13 @@ class CodeToVideoGenerator:
                 highlighted_tokens = self.highlighter.get_highlighted_text(
                     block.code, block.language)
 
-                # Calculate frames needed for typing
-                total_chars = len(block.code)
-                chars_per_frame = self.config.typing_speed / self.config.fps
-                total_frames = int(total_chars / chars_per_frame) + 1
-
-                # Generate frames for typing animation
-                for frame_num in range(total_frames):
-                    current_pos = min(int(frame_num * chars_per_frame), total_chars)
-                    frame = self.create_frame(block.code, highlighted_tokens, current_pos)
-                    out.write(frame)
+                if self.config.realistic_typing:
+                    self._generate_realistic_typing_frames(out, block, highlighted_tokens)
+                else:
+                    self._generate_uniform_typing_frames(out, block, highlighted_tokens)
 
                 # Hold the final frame
-                final_frame = self.create_frame(block.code, highlighted_tokens, total_chars)
+                final_frame = self.create_frame(block.code, highlighted_tokens, len(block.code))
                 for _ in range(int(self.config.fps * self.config.pause_duration)):
                     out.write(final_frame)
 
@@ -389,6 +532,57 @@ class CodeToVideoGenerator:
         finally:
             out.release()
             cv2.destroyAllWindows()
+    
+    def _generate_realistic_typing_frames(self, out, block: CodeBlock, highlighted_tokens):
+        """Generate frames with realistic typing timing"""
+        current_pos = 0
+        accumulated_time = 0.0
+        frame_time = 1.0 / self.config.fps
+        
+        while current_pos < len(block.code):
+            char = block.code[current_pos]
+            
+            # Calculate realistic delay for this character
+            char_delay = self.typing_realism.get_character_delay(
+                char, block.code, current_pos
+            )
+            
+            # Add natural pauses after certain characters
+            if char in ',.;':
+                char_delay += self.typing_realism.get_pause_delay("comma")
+            elif char in '.!?':
+                char_delay += self.typing_realism.get_pause_delay("period")
+            elif char == '\n':
+                char_delay += self.typing_realism.get_pause_delay("newline")
+            elif char in '{}[]()':
+                char_delay += self.typing_realism.get_pause_delay("brace")
+            
+            # Accumulate time until we need to generate a frame
+            accumulated_time += char_delay
+            
+            # Generate frames for the accumulated time
+            frames_to_generate = int(accumulated_time / frame_time)
+            accumulated_time -= frames_to_generate * frame_time
+            
+            # Show the character being typed
+            current_pos += 1
+            frame = self.create_frame(block.code, highlighted_tokens, current_pos)
+            
+            # Write the required number of frames
+            for _ in range(max(1, frames_to_generate)):  # Always at least 1 frame
+                out.write(frame)
+    
+    def _generate_uniform_typing_frames(self, out, block: CodeBlock, highlighted_tokens):
+        """Generate frames with uniform typing timing (original behavior)"""
+        total_chars = len(block.code)
+        chars_per_frame = self.config.typing_speed / self.config.fps
+        total_frames = int(total_chars / chars_per_frame) + 1
+
+        # Generate frames for typing animation
+        for frame_num in range(total_frames):
+            current_pos = min(int(frame_num * chars_per_frame), total_chars)
+            frame = self.create_frame(block.code, highlighted_tokens, current_pos)
+            out.write(frame)
 
 
 def get_available_themes():
@@ -407,8 +601,13 @@ def get_available_themes():
 @click.option('--theme', default='dark', type=click.Choice(get_available_themes(), case_sensitive=False),
               help='Color theme')
 @click.option('--pause-duration', default=2.0, help='Pause between code blocks in seconds')
+@click.option('--realistic-typing/--no-realistic-typing', default=True, 
+              help='Enable realistic typing variations (default: enabled)')
+@click.option('--realism-factor', default=1.0, type=float,
+              help='How much realism to apply (0.0=none, 1.0=normal, 2.0=exaggerated)')
 @click.option('--list-themes', is_flag=True, help='List available themes and exit')
-def main(input_file, output_file, typing_speed, font_size, width, height, theme, pause_duration, list_themes):
+def main(input_file, output_file, typing_speed, font_size, width, height, theme, pause_duration, 
+         realistic_typing, realism_factor, list_themes):
     """Convert markdown code blocks to a typing animation video."""
 
     # Handle list themes option
@@ -430,19 +629,27 @@ def main(input_file, output_file, typing_speed, font_size, width, height, theme,
     print(f"📝 Input: {input_file}")
     print(f"🎥 Output: {output_file}")
     print(f"🎨 Theme: {theme}")
+    
+    if realistic_typing:
+        realism_desc = "disabled" if realism_factor == 0.0 else f"{realism_factor:.1f}x"
+        print(f"⌨️  Realistic typing: enabled ({realism_desc})")
+    else:
+        print(f"⌨️  Realistic typing: disabled")
 
     # Read input file
     with open(input_file, 'r', encoding='utf-8') as f:
         markdown_content = f.read()
 
-    # Create configuration
+        # Create configuration
     config = VideoConfig(
         width=width,
         height=height,
         typing_speed=typing_speed,
         font_size=font_size,
-                         theme=theme,
-        pause_duration=pause_duration
+        theme=theme,
+        pause_duration=pause_duration,
+        realistic_typing=realistic_typing,
+        realism_factor=realism_factor
     )
 
     # Create generator

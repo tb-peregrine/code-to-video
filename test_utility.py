@@ -136,6 +136,49 @@ def test_theme_system():
     print("✅ Theme system test passed!")
 
 
+def test_realistic_typing():
+    """Test realistic typing system"""
+    print("🧪 Testing realistic typing system...")
+
+    from code_to_video import TypingRealism
+
+    # Test basic initialization
+    typing_realism = TypingRealism(base_speed=30.0, realism_factor=1.0)
+    
+    # Test character delay calculation
+    test_chars = ['a', 'Q', '!', ' ', '\n', '(', ')']
+    delays = []
+    
+    for char in test_chars:
+        delay = typing_realism.get_character_delay(char, "test context", 5)
+        delays.append(delay)
+        assert delay > 0, f"Delay for '{char}' should be positive"
+    
+    # Test that different characters have different delays (with realism)
+    home_row_delay = typing_realism.get_character_delay('a', "", 0)
+    number_delay = typing_realism.get_character_delay('1', "", 0)
+    special_delay = typing_realism.get_character_delay('!', "", 0)
+    
+    # Numbers and special chars should generally be slower than home row
+    # (though random variation might occasionally make them faster)
+    print(f"   Home row 'a': {home_row_delay:.3f}s")
+    print(f"   Number '1': {number_delay:.3f}s") 
+    print(f"   Special '!': {special_delay:.3f}s")
+    
+    # Test pause delays
+    pause_delay = typing_realism.get_pause_delay("comma")
+    assert pause_delay > 0, "Pause delay should be positive"
+    print(f"   Comma pause: {pause_delay:.3f}s")
+    
+    # Test that realism factor affects timing
+    no_realism = TypingRealism(base_speed=30.0, realism_factor=0.0)
+    uniform_delay = no_realism.get_character_delay('a', "", 0)
+    base_expected = 1.0 / 30.0  # Should be exactly this with no realism
+    assert abs(uniform_delay - base_expected) < 0.001, "No realism should give uniform timing"
+    
+    print("✅ Realistic typing test passed!")
+
+
 def main():
     """Run all tests"""
     print("🚀 Running code-to-video utility tests...\n")
@@ -146,6 +189,7 @@ def main():
         test_video_generation_dry_run()
         test_indentation_handling()
         test_theme_system()
+        test_realistic_typing()
 
         print("\n🎉 All tests passed! The utility is ready to use.")
         print("\nTo generate a video from the example file, run:")
