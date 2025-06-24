@@ -46,7 +46,7 @@ python code_to_video.py input.md output.mp4 \
 
 ## Options
 
-- `--typing-speed`: Base characters per second (default: 30)
+- `--typing-speed`: Base characters per second (default: 15)
 - `--font-size`: Font size in pixels (default: 16)
 - `--width`: Video width (default: 1024)
 - `--height`: Video height (default: 768)

@@ -20,7 +20,7 @@ import click
 class TypingRealism:
     """Handles realistic typing speed variations based on keyboard ergonomics and human factors"""
     
-    def __init__(self, base_speed: float = 10.0, realistic: bool = True, randomness: float = 1.0):
+    def __init__(self, base_speed: float = 15.0, realistic: bool = True, randomness: float = 1.0):
         """
         Initialize typing realism system
         
@@ -288,7 +288,7 @@ class VideoConfig:
                  width: int = 1024,
                  height: int = 768,
                  fps: int = 30,
-                 typing_speed: int = 10,  # characters per second
+                 typing_speed: int = 15,  # characters per second
                  font_size: int = 16,
                  theme: str = 'dark',
                  pause_duration: float = 2.0,
@@ -598,7 +598,7 @@ def get_available_themes():
 @click.command()
 @click.argument('input_file', type=click.Path(exists=True), required=False)
 @click.argument('output_file', type=click.Path(), required=False)
-@click.option('--typing-speed', default=10, help='Characters typed per second')
+@click.option('--typing-speed', default=15, help='Characters typed per second')
 @click.option('--font-size', default=16, help='Font size in pixels')
 @click.option('--width', default=1024, help='Video width')
 @click.option('--height', default=768, help='Video height')
